@@ -9,7 +9,7 @@
 import UIKit
 
 class ImageStore {
-    
+
     let cache = NSCache<NSString, UIImage>()
     
     func setImage(image: UIImage, forKey key: String) {
@@ -26,6 +26,7 @@ class ImageStore {
     func deleteImageForKey(key: String) {
         cache.removeObject(forKey: key as NSString)
     }
+ 
     /*
     var images = Dictionary<String, UIImage>()
     
@@ -33,8 +34,8 @@ class ImageStore {
         images[key] = image
     }
     
-    func imageForKey(key: String) -> UIImage {
-        return images[key]!
+    func imageForKey(key: String) -> UIImage? {
+        return images[key]
     }
     
     func deleteImageForKey(key: String) {

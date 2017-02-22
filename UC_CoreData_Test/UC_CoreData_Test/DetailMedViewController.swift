@@ -30,6 +30,10 @@ class DetailMedViewController: UIViewController, UITextFieldDelegate, UINavigati
     
     var appearance: String?
     
+    var key: String?
+    
+    let imagePicker = UIImagePickerController()
+    
     //var medIndex: Int!
     
     @IBOutlet var doseTF: UITextField!
@@ -45,20 +49,26 @@ class DetailMedViewController: UIViewController, UITextFieldDelegate, UINavigati
         self.medDose = self.med.dosage
         self.medFreq = self.med.dailyFreq
         
+        self.key = self.med.imageKey
+        
         self.appTF.text = self.appearance!
         self.doseTF.text = String(self.medDose!)
         self.freqTF.text = String(self.medFreq!)
         
-        let key = med.imageKey
+        //let key = med.imageKey
         
         if let imageToDisplay = imageStore.imageForKey(key: key!) {
             imageView.image = imageToDisplay
         }
+        
+        imagePicker.delegate = self
     }
     
     @IBAction func saveMed(_ sender: Any) {
         let appDelegate = (UIApplication.shared.delegate) as! AppDelegate
         let context = appDelegate.persistentContainer.viewContext
+        
+        print(med)
         
         context.delete(med)
         appDelegate.saveContext()
@@ -76,6 +86,8 @@ class DetailMedViewController: UIViewController, UITextFieldDelegate, UINavigati
             newMed.dosage = 0.0
         }
         newMed.name = medName
+        //newMed.imageKey = med.imageKey
+        newMed.imageKey = key
         appDelegate.saveContext()
         med = newMed
         print(med)
@@ -95,45 +107,59 @@ class DetailMedViewController: UIViewController, UITextFieldDelegate, UINavigati
     }
     
     @IBAction func takePicture(_ sender: UIBarButtonItem) {
-        let imagePicker = UIImagePickerController()
-        
-        print("made image picker")
         
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
-            print("going to camera")
-            imagePicker.sourceType = .camera
+            imagePicker.sourceType = .camera;
+            imagePicker.cameraCaptureMode = .photo
+            imagePicker.allowsEditing = false
         } else {
-            print("going to photo library")
             imagePicker.sourceType = .photoLibrary
+            imagePicker.allowsEditing = false
         }
         
-        print("setting delegate")
         
-        imagePicker.delegate = self
-        imagePicker.allowsEditing = true //maybe remove
-        
-        print("about to present image picker")
-        
-        present(imagePicker, animated: true, completion: nil)
+        self.present(imagePicker, animated: true, completion: nil)
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
         
-        print("in image picker")
+        let chosenImage = info[UIImagePickerControllerOriginalImage] as! UIImage
         
-        let image = info[UIImagePickerControllerOriginalImage] as! UIImage
+        let image = self.resizeImage(image: chosenImage, targetSize: CGSize.init(width: 100, height: 100))
         
-        print("took image")
-        
-        imageStore.setImage(image: image, forKey: med.imageKey!)
-        
-        print("setting image")
+        //imageStore.setImage(image: image, forKey: med.imageKey!)
+        imageStore.setImage(image: image, forKey: key!)
         
         imageView.image = image
         
-        print("dismissing")
+        //dismiss(animated: true, completion: nil)
+        picker.dismiss(animated: true, completion: nil)
+    }
+    
+    func resizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
+        let size = image.size
         
-        dismiss(animated: true, completion: nil)
+        let widthRatio  = targetSize.width  / image.size.width
+        let heightRatio = targetSize.height / image.size.height
+        
+        // Figure out what our orientation is, and use that to form the rectangle
+        var newSize: CGSize
+        if(widthRatio > heightRatio) {
+            newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+        } else {
+            newSize = CGSize(width: size.width * widthRatio,  height: size.height * widthRatio)
+        }
+        
+        // This is the rect that we've calculated out and this is what is actually used below
+        let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
+        
+        // Actually do the resizing to the rect using the ImageContext stuff
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: rect)
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return newImage!
     }
     
 }
